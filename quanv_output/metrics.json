@@ -1,0 +1,22 @@
+{
+  "Classical CNN": {
+    "best_val_acc": 0.95,
+    "final_val_loss": 0.24620450685266404,
+    "best_epoch": 5
+  },
+  "Quanv [random]": {
+    "best_val_acc": 0.965,
+    "final_val_loss": 0.2061041907663457,
+    "best_epoch": 23
+  },
+  "Quanv [strongly_entangling]": {
+    "best_val_acc": 0.93,
+    "final_val_loss": 0.3466196100413799,
+    "best_epoch": 21
+  },
+  "Quanv [custom_entangled]": {
+    "best_val_acc": 0.895,
+    "final_val_loss": 0.6165795773267746,
+    "best_epoch": 17
+  }
+}
