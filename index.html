@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How Quanvolutional Neural Networks Work</title>
+    <meta name="description"
+        content="Interactive visual explainer of Quanvolutional Neural Networks - learn how quantum circuits act as image filters for machine learning." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        /* ================================================================
+           RESET & VARIABLES
+           ================================================================ */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-deep: #050510;
+            --bg-primary: #0a0a1a;
+            --bg-secondary: #0f0f2a;
+            --bg-card: rgba(15, 15, 42, 0.8);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.07);
+            --border-active: rgba(139, 92, 246, 0.4);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-violet: #8b5cf6;
+            --accent-indigo: #6366f1;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #22d3ee;
+            --accent-emerald: #10b981;
+            --accent-pink: #ec4899;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --gradient-hero: linear-gradient(135deg, #6366f1 0%, #8b5cf6 30%, #ec4899 70%, #f59e0b 100%);
+            --gradient-quantum: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --gradient-classical: linear-gradient(135deg, #10b981, #22d3ee);
+            --shadow-glow: 0 0 60px rgba(99, 102, 241, 0.15);
+            --shadow-glow-sm: 0 0 30px rgba(99, 102, 241, 0.1);
+            --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-display: 'Space Grotesk', 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --radius-xl: 24px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ================================================================
+           AMBIENT BACKGROUND
+           ================================================================ */
+        .ambient-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .ambient-bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.12;
+            animation: orbFloat 20s ease-in-out infinite alternate;
+        }
+
+        .ambient-bg .orb:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            top: -10%;
+            left: -5%;
+            background: var(--accent-indigo);
+        }
+
+        .ambient-bg .orb:nth-child(2) {
+            width: 500px;
+            height: 500px;
+            top: 30%;
+            right: -10%;
+            background: var(--accent-pink);
+            animation-delay: -7s;
+        }
+
+        .ambient-bg .orb:nth-child(3) {
+            width: 400px;
+            height: 400px;
+            bottom: 10%;
+            left: 20%;
+            background: var(--accent-cyan);
+            animation-delay: -14s;
+        }
+
+        @keyframes orbFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(40px, -30px) scale(1.1);
+            }
+
+            100% {
+                transform: translate(-20px, 20px) scale(0.95);
+            }
+        }
+
+        /* ================================================================
+           SCROLLBAR
+           ================================================================ */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.3);
+            border-radius: 3px;
+        }
+
+        /* ================================================================
+           NAVIGATION
+           ================================================================ */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 16px 32px;
+            background: rgba(5, 5, 16, 0.7);
+            backdrop-filter: blur(24px) saturate(1.5);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .nav.scrolled {
+            padding: 10px 32px;
+            background: rgba(5, 5, 16, 0.92);
+        }
+
+        .nav-brand {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.1rem;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 6px;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 999px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--text-primary);
+            border-color: var(--border-active);
+            background: rgba(139, 92, 246, 0.08);
+        }
+
+        /* ================================================================
+           HERO SECTION
+           ================================================================ */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 24px 80px;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            border-radius: 999px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--accent-indigo);
+            font-family: var(--font-mono);
+            margin-bottom: 32px;
+            animation: fadeInUp 0.8s ease both;
+        }
+
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-emerald);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.7);
+            }
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.8rem, 7vw, 5.5rem);
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            margin-bottom: 24px;
+            max-width: 900px;
+            animation: fadeInUp 0.8s ease 0.15s both;
+        }
+
+        .hero h1 .gradient-text {
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 620px;
+            line-height: 1.7;
+            margin-bottom: 48px;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease 0.45s both;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 999px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            font-family: var(--font-body);
+        }
+
+        .btn-primary {
+            background: var(--gradient-quantum);
+            color: white;
+            box-shadow: 0 4px 24px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-ghost {
+            background: var(--bg-glass);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-primary);
+            border-color: var(--border-active);
+        }
+
+        .hero-visual {
+            margin-top: 64px;
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            animation: fadeInUp 0.8s ease 0.6s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ================================================================
+           SECTIONS
+           ================================================================ */
+        .section {
+            padding: 120px 24px;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--accent-violet);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+
+        .section-desc {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin-bottom: 48px;
+            line-height: 1.7;
+        }
+
+        /* ================================================================
+           PIPELINE FLOW
+           ================================================================ */
+        .pipeline {
+            display: grid;
+            gap: 0;
+            position: relative;
+        }
+
+        .pipeline-step {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 32px;
+            position: relative;
+            padding-bottom: 64px;
+        }
+
+        .pipeline-step:last-child {
+            padding-bottom: 0;
+        }
+
+        .step-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .step-number {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.2rem;
+            border: 2px solid var(--border);
+            color: var(--text-muted);
+            background: var(--bg-primary);
+            position: relative;
+            z-index: 2;
+            transition: all 0.4s ease;
+        }
+
+        .step-number.active {
+            border-color: var(--accent-violet);
+            color: white;
+            background: var(--gradient-quantum);
+            box-shadow: 0 0 24px rgba(99, 102, 241, 0.3);
+        }
+
+        .step-line {
+            width: 2px;
+            flex: 1;
+            margin-top: 8px;
+            background: linear-gradient(to bottom, var(--border), transparent);
+        }
+
+        .step-content {
+            padding-top: 8px;
+        }
+
+        .step-content h3 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .step-content p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 24px;
+            max-width: 560px;
+        }
+
+        /* ================================================================
+           INTERACTIVE CARDS
+           ================================================================ */
+        .visual-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            backdrop-filter: blur(12px);
+            transition: all 0.4s ease;
+            overflow: hidden;
+        }
+
+        .visual-card:hover {
+            border-color: var(--border-active);
+            box-shadow: var(--shadow-glow-sm);
+        }
+
+        /* ── Pixel Grid (Step 1) ─────────────────────────────── */
+        .pixel-grid-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .pixel-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            width: fit-content;
+        }
+
+        .pixel {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .pixel:hover {
+            transform: scale(1.15);
+            z-index: 2;
+        }
+
+        .pixel.highlighted {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 1px;
+            animation: pixelPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pixelPulse {
+
+            0%,
+            100% {
+                outline-color: var(--accent-cyan);
+            }
+
+            50% {
+                outline-color: var(--accent-pink);
+            }
+        }
+
+        .patch-label {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--accent-cyan);
+            text-align: center;
+        }
+
+        /* ── Quantum Circuit Animated (Step 2) ─────────────── */
+        .circuit-anim {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 24px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .wire {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            height: 48px;
+            position: relative;
+        }
+
+        .wire-label {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--accent-cyan);
+            min-width: 40px;
+            font-weight: 600;
+        }
+
+        .wire-line {
+            flex: 1;
+            height: 2px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .wire-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0;
+            background: var(--accent-cyan);
+            animation: wireFlow 3s ease-in-out infinite;
+        }
+
+        @keyframes wireFlow {
+            0% {
+                width: 0;
+                left: 0;
+                opacity: 1;
+            }
+
+            50% {
+                width: 100%;
+                left: 0;
+                opacity: 1;
+            }
+
+            100% {
+                width: 0;
+                left: 100%;
+                opacity: 0;
+            }
+        }
+
+        .wire:nth-child(2) .wire-line::after {
+            animation-delay: 0.3s;
+        }
+
+        .wire:nth-child(3) .wire-line::after {
+            animation-delay: 0.6s;
+        }
+
+        .wire:nth-child(4) .wire-line::after {
+            animation-delay: 0.9s;
+        }
+
+        .gate {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+            z-index: 3;
+            top: -21px;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .gate:hover {
+            transform: scale(1.15);
+        }
+
+        .gate-ry {
+            background: rgba(99, 102, 241, 0.2);
+            border: 1.5px solid var(--accent-indigo);
+            color: var(--accent-indigo);
+        }
+
+        .gate-rand {
+            background: rgba(236, 72, 153, 0.2);
+            border: 1.5px solid var(--accent-pink);
+            color: var(--accent-pink);
+        }
+
+        .gate-cnot {
+            background: rgba(34, 211, 238, 0.2);
+            border: 1.5px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .gate-meas {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1.5px solid var(--accent-amber);
+            color: var(--accent-amber);
+        }
+
+        .cnot-line {
+            position: absolute;
+            width: 2px;
+            background: var(--accent-cyan);
+            z-index: 2;
+            left: 50%;
+        }
+
+        .circuit-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+        }
+
+        /* ── Measurement (Step 3) ─────────────────────────── */
+        .measurement-viz {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .qubit-meter {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            min-width: 100px;
+            transition: all 0.3s ease;
+        }
+
+        .qubit-meter:hover {
+            border-color: var(--border-active);
+            transform: translateY(-4px);
+        }
+
+        .meter-label {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .meter-bar-container {
+            width: 32px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .meter-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 16px;
+            transition: height 1s ease;
+        }
+
+        .meter-value {
+            font-family: var(--font-mono);
+            font-size: 0.92rem;
+            font-weight: 700;
+        }
+
+        .arrow-icon {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            animation: arrowBounce 2s ease infinite;
+        }
+
+        @keyframes arrowBounce {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(6px);
+            }
+        }
+
+        /* ── Feature Map (Step 4) ────────────────────────── */
+        .feature-map-demo {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .fmap-channel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fmap-grid {
+            display: grid;
+            gap: 1px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .fmap-pixel {
+            width: 20px;
+            height: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .fmap-label {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* ── Comparison Section ────────────────────────────── */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .compare-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            backdrop-filter: blur(12px);
+            transition: all 0.4s ease;
+        }
+
+        .compare-card:hover {
+            border-color: var(--border-active);
+            transform: translateY(-4px);
+        }
+
+        .compare-card.quantum {
+            border-top: 3px solid var(--accent-violet);
+        }
+
+        .compare-card.classical {
+            border-top: 3px solid var(--accent-emerald);
+        }
+
+        .compare-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .compare-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .compare-icon.q {
+            background: rgba(139, 92, 246, 0.15);
+        }
+
+        .compare-icon.c {
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .compare-title {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .compare-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .compare-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .compare-list .bullet {
+            width: 6px;
+            height: 6px;
+            min-width: 6px;
+            border-radius: 50%;
+            margin-top: 7px;
+        }
+
+        .compare-list .bullet.q {
+            background: var(--accent-violet);
+        }
+
+        .compare-list .bullet.c {
+            background: var(--accent-emerald);
+        }
+
+        /* ── Interactive Demo ──────────────────────────────── */
+        .demo-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+        }
+
+        .demo-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .demo-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .demo-dot:nth-child(1) {
+            background: #ef4444;
+        }
+
+        .demo-dot:nth-child(2) {
+            background: #f59e0b;
+        }
+
+        .demo-dot:nth-child(3) {
+            background: #10b981;
+        }
+
+        .demo-title-bar {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+
+        .demo-body {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .demo-btn {
+            padding: 10px 20px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            font-family: var(--font-body);
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--bg-glass);
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .demo-btn:hover {
+            border-color: var(--accent-violet);
+            color: var(--text-primary);
+        }
+
+        .demo-btn.active {
+            background: var(--gradient-quantum);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        /* ── Results Section ───────────────────────────────── */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            border-color: var(--border-active);
+            transform: translateY(-4px);
+        }
+
+        .result-card .result-value {
+            font-family: var(--font-display);
+            font-size: 2.4rem;
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .result-card .result-label {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .result-bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .bar-row {
+            display: grid;
+            grid-template-columns: 200px 1fr 60px;
+            gap: 16px;
+            align-items: center;
+        }
+
+        @media (max-width: 600px) {
+            .bar-row {
+                grid-template-columns: 120px 1fr 50px;
+            }
+        }
+
+        .bar-name {
+            font-size: 0.88rem;
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .bar-track {
+            height: 28px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 14px;
+            transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+            width: 0;
+        }
+
+        .bar-pct {
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        /* ── Summary Cards ────────────────────────────────── */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .summary-card:hover {
+            border-color: var(--border-active);
+            transform: translateY(-4px);
+        }
+
+        .summary-card .icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+        }
+
+        .summary-card h4 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .summary-card p {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ── Footer ───────────────────────────────────────── */
+        .footer {
+            text-align: center;
+            padding: 60px 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer a {
+            color: var(--accent-violet);
+            text-decoration: none;
+        }
+
+        /* ── Scroll Animations ────────────────────────────── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(32px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── Responsive ───────────────────────────────────── */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .pipeline-step {
+                grid-template-columns: 48px 1fr;
+                gap: 16px;
+            }
+
+            .step-number {
+                width: 44px;
+                height: 44px;
+                font-size: 1rem;
+            }
+
+            .section {
+                padding: 80px 16px;
+            }
+
+            .hero {
+                padding: 100px 16px 60px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .pixel {
+                width: 28px;
+                height: 28px;
+            }
+
+            .gate {
+                width: 36px;
+                height: 36px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="mainNav">
+        <div class="nav-brand">QuanvNet</div>
+        <div class="nav-links">
+            <a href="#pipeline">Pipeline</a>
+            <a href="#comparison">Comparison</a>
+            <a href="#demo">Live Demo</a>
+            <a href="#results">Results</a>
+        </div>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════════════════
+         HERO SECTION
+         ═══════════════════════════════════════════════════════ -->
+    <section class="hero" id="top">
+        <div class="hero-badge"><span class="dot"></span> Quantum Machine Learning</div>
+        <h1>How <span class="gradient-text">Quanvolutional</span><br />Neural Networks Work</h1>
+        <p class="hero-subtitle">
+            An interactive visual guide to understanding how quantum circuits
+            replace classical convolutions to extract powerful features from images.
+        </p>
+        <div class="hero-cta">
+            <a href="#pipeline" class="btn btn-primary">Explore the Pipeline &darr;</a>
+            <a href="#demo" class="btn btn-ghost">Try Live Demo</a>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         PIPELINE — STEP BY STEP
+         ═══════════════════════════════════════════════════════ -->
+    <section class="section" id="pipeline">
+        <div class="container">
+            <div class="section-label reveal">How It Works</div>
+            <h2 class="section-title reveal">The Quanvolution Pipeline</h2>
+            <p class="section-desc reveal">
+                A quanvolutional layer replaces the learned kernel of a classical CNN
+                with a parametrized quantum circuit. Here's exactly how it processes
+                an image, step by step.
+            </p>
+
+            <div class="pipeline">
+
+                <!-- ── STEP 1: Patch Extraction ─────────────────── -->
+                <div class="pipeline-step reveal" id="step1">
+                    <div class="step-indicator">
+                        <div class="step-number active">1</div>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="step-content">
+                        <h3>Patch Extraction</h3>
+                        <p>
+                            The input image is scanned with a sliding 2&times;2 window
+                            (stride 2). Each patch captures 4 pixel values that will be
+                            encoded into quantum states. Hover over the grid to see patches!
+                        </p>
+                        <div class="visual-card">
+                            <div class="pixel-grid-container">
+                                <div class="pixel-grid" id="pixelGrid"></div>
+                                <div class="patch-label" id="patchLabel">Hover a pixel to highlight its 2&times;2 patch
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── STEP 2: Quantum Encoding ─────────────────── -->
+                <div class="pipeline-step reveal" id="step2">
+                    <div class="step-indicator">
+                        <div class="step-number active">2</div>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="step-content">
+                        <h3>Quantum Circuit Processing</h3>
+                        <p>
+                            Each patch's 4 pixel values are encoded as R<sub>Y</sub> rotation
+                            angles on 4 qubits. A random (or variational) unitary then
+                            entangles the qubits, creating complex feature interactions
+                            impossible with classical linear kernels.
+                        </p>
+                        <div class="visual-card">
+                            <div class="circuit-anim" id="circuitAnim">
+                                <!-- Wire 0 -->
+                                <div class="wire">
+                                    <span class="wire-label">q<sub>0</sub></span>
+                                    <div class="wire-line">
+                                        <div class="gate gate-ry" style="left: 12%;">Ry</div>
+                                        <div class="gate gate-rand" style="left: 40%;">Rz</div>
+                                        <div class="gate gate-cnot" style="left: 62%;">+</div>
+                                        <div class="gate gate-meas" style="left: 85%;">&lang;Z&rang;</div>
+                                    </div>
+                                </div>
+                                <!-- Wire 1 -->
+                                <div class="wire">
+                                    <span class="wire-label">q<sub>1</sub></span>
+                                    <div class="wire-line">
+                                        <div class="gate gate-ry" style="left: 12%;">Ry</div>
+                                        <div class="gate gate-rand" style="left: 40%;">Rx</div>
+                                        <div class="gate gate-cnot" style="left: 62%;">&bull;</div>
+                                        <div class="gate gate-meas" style="left: 85%;">&lang;Z&rang;</div>
+                                    </div>
+                                </div>
+                                <!-- Wire 2 -->
+                                <div class="wire">
+                                    <span class="wire-label">q<sub>2</sub></span>
+                                    <div class="wire-line">
+                                        <div class="gate gate-ry" style="left: 12%;">Ry</div>
+                                        <div class="gate gate-rand" style="left: 40%;">Rz</div>
+                                        <div class="gate gate-cnot" style="left: 62%;">+</div>
+                                        <div class="gate gate-meas" style="left: 85%;">&lang;Z&rang;</div>
+                                    </div>
+                                </div>
+                                <!-- Wire 3 -->
+                                <div class="wire">
+                                    <span class="wire-label">q<sub>3</sub></span>
+                                    <div class="wire-line">
+                                        <div class="gate gate-ry" style="left: 12%;">Ry</div>
+                                        <div class="gate gate-rand" style="left: 40%;">Rx</div>
+                                        <div class="gate gate-cnot" style="left: 62%;">&bull;</div>
+                                        <div class="gate gate-meas" style="left: 85%;">&lang;Z&rang;</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="circuit-legend">
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background:var(--accent-indigo);"></div> Encoding
+                                    (Ry)
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background:var(--accent-pink);"></div> Random
+                                    Unitaries
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background:var(--accent-cyan);"></div> Entanglement
+                                    (CNOT)
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background:var(--accent-amber);"></div> Measurement
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── STEP 3: Measurement ──────────────────────── -->
+                <div class="pipeline-step reveal" id="step3">
+                    <div class="step-indicator">
+                        <div class="step-number active">3</div>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="step-content">
+                        <h3>Quantum Measurement</h3>
+                        <p>
+                            Each qubit is measured in the Pauli-Z basis, yielding an
+                            expectation value between &minus;1 and +1. These 4 values
+                            become the 4 channels of a single output pixel.
+                        </p>
+                        <div class="visual-card">
+                            <div class="measurement-viz" id="measurementViz">
+                                <!-- populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── STEP 4: Feature Map ──────────────────────── -->
+                <div class="pipeline-step reveal" id="step4">
+                    <div class="step-indicator">
+                        <div class="step-number active">4</div>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="step-content">
+                        <h3>Quanvolved Feature Map</h3>
+                        <p>
+                            Scanning all patches produces a 14&times;14 output with
+                            4 channels per pixel &mdash; analogous to a classical
+                            convolution but powered by quantum interference.
+                        </p>
+                        <div class="visual-card">
+                            <div class="feature-map-demo" id="featureMapDemo">
+                                <!-- populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── STEP 5: Classification ───────────────────── -->
+                <div class="pipeline-step reveal" id="step5">
+                    <div class="step-indicator">
+                        <div class="step-number active">5</div>
+                    </div>
+                    <div class="step-content">
+                        <h3>Classical Classification</h3>
+                        <p>
+                            The 4-channel quantum feature map is fed into a standard
+                            neural network (Conv2D + Dense) for final digit classification.
+                            The classical layers are trained with backpropagation while the
+                            quantum filter stays fixed &mdash; extracting rich, non-linear features.
+                        </p>
+                        <div class="visual-card" style="text-align:center;">
+                            <div id="classifierViz"
+                                style="display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- .pipeline -->
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         COMPARISON: QUANTUM vs CLASSICAL
+         ═══════════════════════════════════════════════════════ -->
+    <section class="section" id="comparison">
+        <div class="container">
+            <div class="section-label reveal">Deep Dive</div>
+            <h2 class="section-title reveal">Quantum vs. Classical Convolution</h2>
+            <p class="section-desc reveal">
+                Both approaches slide a kernel across an image, but the nature of the
+                transformation is fundamentally different.
+            </p>
+            <div class="comparison-grid reveal">
+                <div class="compare-card quantum">
+                    <div class="compare-header">
+                        <div class="compare-icon q">&#9883;</div>
+                        <div class="compare-title">Quantum Convolution</div>
+                    </div>
+                    <ul class="compare-list">
+                        <li><span class="bullet q"></span>Encodes pixel intensities as qubit rotation angles</li>
+                        <li><span class="bullet q"></span>Generates features via quantum interference &amp; entanglement
+                        </li>
+                        <li><span class="bullet q"></span>Can produce highly non-linear, classically intractable kernels
+                        </li>
+                        <li><span class="bullet q"></span>Operates in exponentially large Hilbert
+                            space(2<sup>n</sup>amplitudes)</li>
+                        <li><span class="bullet q"></span>Even random circuits extract useful, diverse features</li>
+                    </ul>
+                </div>
+                <div class="compare-card classical">
+                    <div class="compare-header">
+                        <div class="compare-icon c">&#9670;</div>
+                        <div class="compare-title">Classical Convolution</div>
+                    </div>
+                    <ul class="compare-list">
+                        <li><span class="bullet c"></span>Applies learned weight matrix via dot product</li>
+                        <li><span class="bullet c"></span>Features produced by linear transform + activation function
+                        </li>
+                        <li><span class="bullet c"></span>Kernel complexity limited by parameter count</li>
+                        <li><span class="bullet c"></span>Operates directly on pixel values in Euclidean space</li>
+                        <li><span class="bullet c"></span>Requires training to discover useful filters</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         LIVE DEMO
+         ═══════════════════════════════════════════════════════ -->
+    <section class="section" id="demo">
+        <div class="container">
+            <div class="section-label reveal">Interactive</div>
+            <h2 class="section-title reveal">Live Quanvolution Demo</h2>
+            <p class="section-desc reveal">
+                Draw a digit and watch the quantum filter transform it in real time.
+                Select different quantum filter types to see how each architecture
+                produces different features.
+            </p>
+
+            <div class="demo-container reveal">
+                <div class="demo-toolbar">
+                    <div class="demo-dot"></div>
+                    <div class="demo-dot"></div>
+                    <div class="demo-dot"></div>
+                    <span class="demo-title-bar">quanvolution_simulator.py</span>
+                </div>
+                <div class="demo-body">
+                    <div class="demo-controls">
+                        <button class="demo-btn active" data-filter="random" id="btnRandom">Random Filter</button>
+                        <button class="demo-btn" data-filter="entangling" id="btnEntangling">Entangling Filter</button>
+                        <button class="demo-btn" data-filter="custom" id="btnCustom">Custom Filter</button>
+                        <button class="demo-btn" data-filter="clear" id="btnClear"
+                            style="border-color:var(--accent-red); color:var(--accent-red);">Clear</button>
+                    </div>
+                    <div
+                        style="display:flex; gap:32px; flex-wrap:wrap; align-items:flex-start; justify-content:center;">
+                        <!-- Input Canvas -->
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                            <canvas id="drawCanvas" width="280" height="280" style="border:1px solid var(--border); border-radius:var(--radius-md);
+                                       cursor:crosshair; background:#000; image-rendering:pixelated;"></canvas>
+                            <span class="fmap-label">Draw a digit (mouse / touch)</span>
+                        </div>
+                        <!-- Arrow -->
+                        <div style="display:flex; align-items:center; padding-top:80px;">
+                            <span class="arrow-icon">&rarr;</span>
+                        </div>
+                        <!-- Output Channels -->
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                <canvas id="outCh0" width="140" height="140"
+                                    style="border:1px solid var(--border); border-radius:var(--radius-sm); background:#000;"></canvas>
+                                <canvas id="outCh1" width="140" height="140"
+                                    style="border:1px solid var(--border); border-radius:var(--radius-sm); background:#000;"></canvas>
+                                <canvas id="outCh2" width="140" height="140"
+                                    style="border:1px solid var(--border); border-radius:var(--radius-sm); background:#000;"></canvas>
+                                <canvas id="outCh3" width="140" height="140"
+                                    style="border:1px solid var(--border); border-radius:var(--radius-sm); background:#000;"></canvas>
+                            </div>
+                            <span class="fmap-label">4 Quantum Channels Output</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         RESULTS
+         ═══════════════════════════════════════════════════════ -->
+    <section class="section" id="results">
+        <div class="container">
+            <div class="section-label reveal">Performance</div>
+            <h2 class="section-title reveal">Model Results</h2>
+            <p class="section-desc reveal">
+                Trained on 500 MNIST images for 30 epochs, the quanvolutional random
+                filter outperformed the classical CNN baseline.
+            </p>
+
+            <div class="results-grid reveal">
+                <div class="result-card">
+                    <div class="result-value"
+                        style="background:var(--gradient-quantum);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+                        96.5%</div>
+                    <div class="result-label">Best Accuracy (Quantum)</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value" style="color:var(--accent-emerald);">95.0%</div>
+                    <div class="result-label">Classical CNN Baseline</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value" style="color:var(--accent-cyan);">4</div>
+                    <div class="result-label">Qubits Per Filter</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value" style="color:var(--accent-amber);">3</div>
+                    <div class="result-label">Filter Architectures</div>
+                </div>
+            </div>
+
+            <div class="visual-card reveal">
+                <h3 style="font-family:var(--font-display); margin-bottom:24px;">Accuracy Comparison</h3>
+                <div class="result-bar-chart" id="barChart">
+                    <!-- populated by JS -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         KEY TAKEAWAYS
+         ═══════════════════════════════════════════════════════ -->
+    <section class="section" id="takeaways">
+        <div class="container">
+            <div class="section-label reveal">Summary</div>
+            <h2 class="section-title reveal">Key Takeaways</h2>
+            <p class="section-desc reveal">
+                What makes quanvolutional networks an exciting frontier in quantum ML.
+            </p>
+            <div class="summary-grid reveal">
+                <div class="summary-card">
+                    <div class="icon" style="background:rgba(99,102,241,0.15);">&#9883;</div>
+                    <h4>Quantum Advantage in Feature Space</h4>
+                    <p>Quantum circuits can produce feature maps in exponentially large
+                        Hilbert spaces, potentially capturing structure that classical
+                        kernels cannot efficiently represent.</p>
+                </div>
+                <div class="summary-card">
+                    <div class="icon" style="background:rgba(236,72,153,0.15);">&#10024;</div>
+                    <h4>Random Circuits Are Surprisingly Good</h4>
+                    <p>Even non-trainable random quantum circuits outperform classical
+                        baselines, suggesting that quantum feature spaces are inherently
+                        rich and useful for pattern recognition.</p>
+                </div>
+                <div class="summary-card">
+                    <div class="icon" style="background:rgba(16,185,129,0.15);">&#9889;</div>
+                    <h4>Hybrid Is the Way Forward</h4>
+                    <p>The quanvolutional approach combines the strengths of quantum
+                        pre-processing with classical neural network training, making it
+                        practical for near-term quantum hardware.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Quanvolutional Neural Networks &mdash; Visual Explainer</p>
+        <p style="margin-top:8px;">
+            Based on <a href="https://arxiv.org/abs/1904.04767" target="_blank">Henderson et al. (arXiv:1904.04767)</a>
+            &middot; Built with PennyLane + PyTorch
+        </p>
+    </footer>
+
+    <!-- ================================================================
+         JAVASCRIPT
+         ================================================================ -->
+    <script>
+        (function () {
+            'use strict';
+
+            // ── Nav scroll effect ───────────────────────────────
+            const nav = document.getElementById('mainNav');
+            window.addEventListener('scroll', () => {
+                nav.classList.toggle('scrolled', window.scrollY > 40);
+            });
+
+            // ── Scroll reveal ───────────────────────────────────
+            const revealElements = document.querySelectorAll('.reveal');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+            revealElements.forEach(el => observer.observe(el));
+
+            // ── STEP 1: Interactive Pixel Grid ──────────────────
+            const gridSize = 8;
+            const pixelGrid = document.getElementById('pixelGrid');
+            const patchLabel = document.getElementById('patchLabel');
+
+            // Generate a mini "digit 7" pattern
+            const digitPattern = [
+                [0.1, 0.1, 0.6, 0.9, 0.9, 0.9, 0.8, 0.1],
+                [0.1, 0.1, 0.1, 0.1, 0.1, 0.7, 0.6, 0.1],
+                [0.1, 0.1, 0.1, 0.1, 0.4, 0.8, 0.2, 0.1],
+                [0.1, 0.1, 0.1, 0.3, 0.8, 0.3, 0.1, 0.1],
+                [0.1, 0.1, 0.2, 0.8, 0.4, 0.1, 0.1, 0.1],
+                [0.1, 0.1, 0.7, 0.7, 0.1, 0.1, 0.1, 0.1],
+                [0.1, 0.3, 0.9, 0.3, 0.1, 0.1, 0.1, 0.1],
+                [0.1, 0.5, 0.8, 0.1, 0.1, 0.1, 0.1, 0.1],
+            ];
+
+            const pixels = [];
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    const px = document.createElement('div');
+                    px.className = 'pixel';
+                    const v = digitPattern[r][c];
+                    const gray = Math.round(v * 255);
+                    px.style.background = `rgb(${gray},${gray},${gray})`;
+                    px.dataset.row = r;
+                    px.dataset.col = c;
+                    pixelGrid.appendChild(px);
+                    pixels.push(px);
+                }
+            }
+
+            pixelGrid.addEventListener('mouseover', (e) => {
+                const px = e.target.closest('.pixel');
+                if (!px) return;
+                const r = Math.floor(parseInt(px.dataset.row) / 2) * 2;
+                const c = Math.floor(parseInt(px.dataset.col) / 2) * 2;
+                pixels.forEach(p => p.classList.remove('highlighted'));
+                for (let dr = 0; dr < 2; dr++) {
+                    for (let dc = 0; dc < 2; dc++) {
+                        const idx = (r + dr) * gridSize + (c + dc);
+                        if (idx < pixels.length) pixels[idx].classList.add('highlighted');
+                    }
+                }
+                const vals = [];
+                for (let dr = 0; dr < 2; dr++) {
+                    for (let dc = 0; dc < 2; dc++) {
+                        if (r + dr < gridSize && c + dc < gridSize)
+                            vals.push(digitPattern[r + dr][c + dc].toFixed(1));
+                    }
+                }
+                patchLabel.textContent = `Patch [${r},${c}]: pixels = [${vals.join(', ')}]`;
+            });
+            pixelGrid.addEventListener('mouseleave', () => {
+                pixels.forEach(p => p.classList.remove('highlighted'));
+                patchLabel.innerHTML = 'Hover a pixel to highlight its 2&times;2 patch';
+            });
+
+            // ── STEP 3: Measurement Visualization ──────────────
+            const measViz = document.getElementById('measurementViz');
+            const measValues = [0.72, -0.31, 0.55, -0.88];
+            const measColors = ['var(--accent-indigo)', 'var(--accent-pink)', 'var(--accent-cyan)', 'var(--accent-amber)'];
+
+            measValues.forEach((val, i) => {
+                const meter = document.createElement('div');
+                meter.className = 'qubit-meter';
+                const pct = Math.abs(val) * 100;
+                meter.innerHTML = `
+                <div class="meter-label">Qubit ${i}</div>
+                <div class="meter-bar-container">
+                    <div class="meter-bar" style="height:${pct}%; background:${measColors[i]};"></div>
+                </div>
+                <div class="meter-value" style="color:${measColors[i]};">${val > 0 ? '+' : ''}${val.toFixed(2)}</div>
+            `;
+                measViz.appendChild(meter);
+                if (i < measValues.length - 1) {
+                    const arrow = document.createElement('div');
+                    arrow.style.cssText = 'color:var(--text-muted); font-size:0.85rem; font-family:var(--font-mono);';
+                    arrow.textContent = i === measValues.length - 2 ? '' : '';
+                    measViz.appendChild(arrow);
+                }
+            });
+
+            // Animate meter bars on scroll
+            const measObserver = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        document.querySelectorAll('.meter-bar').forEach(bar => {
+                            const h = bar.style.height;
+                            bar.style.height = '0%';
+                            setTimeout(() => { bar.style.height = h; }, 100);
+                        });
+                    }
+                });
+            }, { threshold: 0.3 });
+            measObserver.observe(measViz);
+
+            // ── STEP 4: Feature Map Vis ─────────────────────────
+            const fmapDemo = document.getElementById('featureMapDemo');
+            const fmapSize = 7;
+            const channelNames = ['Channel 0', 'Channel 1', 'Channel 2', 'Channel 3'];
+            const colormaps = [
+                (v) => `hsl(250, 80%, ${15 + v * 55}%)`,
+                (v) => `hsl(330, 80%, ${15 + v * 55}%)`,
+                (v) => `hsl(185, 80%, ${15 + v * 55}%)`,
+                (v) => `hsl(38, 80%, ${15 + v * 55}%)`,
+            ];
+
+            for (let ch = 0; ch < 4; ch++) {
+                const container = document.createElement('div');
+                container.className = 'fmap-channel';
+                const grid = document.createElement('div');
+                grid.className = 'fmap-grid';
+                grid.style.gridTemplateColumns = `repeat(${fmapSize}, 1fr)`;
+                for (let r = 0; r < fmapSize; r++) {
+                    for (let c = 0; c < fmapSize; c++) {
+                        const px = document.createElement('div');
+                        px.className = 'fmap-pixel';
+                        const val = Math.abs(Math.sin(r * 0.8 + ch * 1.2) * Math.cos(c * 0.6 + ch * 0.9)) * 0.7 + 0.15;
+                        px.style.background = colormaps[ch](val);
+                        grid.appendChild(px);
+                    }
+                }
+                const label = document.createElement('div');
+                label.className = 'fmap-label';
+                label.textContent = channelNames[ch];
+                container.appendChild(grid);
+                container.appendChild(label);
+                fmapDemo.appendChild(container);
+            }
+
+            // ── STEP 5: Classifier Viz ──────────────────────────
+            const classViz = document.getElementById('classifierViz');
+            const layers = [
+                { name: '14x14x4\nQuantum\nFeatures', color: 'var(--accent-violet)', w: 64, h: 80 },
+                { name: 'Conv2D\n16 filters', color: 'var(--accent-blue)', w: 56, h: 70 },
+                { name: 'MaxPool', color: 'var(--accent-cyan)', w: 48, h: 56 },
+                { name: 'Dense\n64', color: 'var(--accent-pink)', w: 40, h: 48 },
+                { name: 'Output\n10', color: 'var(--accent-amber)', w: 42, h: 42 },
+            ];
+            layers.forEach((l, i) => {
+                const box = document.createElement('div');
+                box.style.cssText = `
+                width:${l.w}px; height:${l.h}px;
+                border:2px solid ${l.color}; border-radius:8px;
+                display:flex; align-items:center; justify-content:center;
+                font-family:var(--font-mono); font-size:0.65rem;
+                color:${l.color}; text-align:center; white-space:pre-line;
+                background:${l.color}15; transition:all 0.3s;
+            `;
+                box.textContent = l.name;
+                box.addEventListener('mouseenter', () => {
+                    box.style.transform = 'scale(1.1)';
+                    box.style.boxShadow = `0 0 20px ${l.color}33`;
+                });
+                box.addEventListener('mouseleave', () => {
+                    box.style.transform = 'scale(1)';
+                    box.style.boxShadow = 'none';
+                });
+                classViz.appendChild(box);
+                if (i < layers.length - 1) {
+                    const arr = document.createElement('div');
+                    arr.style.cssText = 'color:var(--text-muted); font-size:1.2rem;';
+                    arr.innerHTML = '&rarr;';
+                    classViz.appendChild(arr);
+                }
+            });
+
+            // ── RESULTS: Bar Chart ──────────────────────────────
+            const barData = [
+                { name: 'Quanv [random]', pct: 96.5, color: 'var(--accent-violet)' },
+                { name: 'Classical CNN', pct: 95.0, color: 'var(--accent-emerald)' },
+                { name: 'Quanv [entangling]', pct: 93.0, color: 'var(--accent-blue)' },
+                { name: 'Quanv [custom]', pct: 89.5, color: 'var(--accent-pink)' },
+            ];
+            const barChart = document.getElementById('barChart');
+            barData.forEach(d => {
+                const row = document.createElement('div');
+                row.className = 'bar-row';
+                row.innerHTML = `
+                <div class="bar-name">${d.name}</div>
+                <div class="bar-track">
+                    <div class="bar-fill" data-pct="${d.pct}" style="background:${d.color};"></div>
+                </div>
+                <div class="bar-pct" style="color:${d.color};">${d.pct}%</div>
+            `;
+                barChart.appendChild(row);
+            });
+
+            const barObserver = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        document.querySelectorAll('.bar-fill').forEach(bar => {
+                            setTimeout(() => {
+                                bar.style.width = bar.dataset.pct + '%';
+                            }, 200);
+                        });
+                    }
+                });
+            }, { threshold: 0.3 });
+            barObserver.observe(barChart);
+
+            // ── LIVE DEMO: Drawing Canvas + Quantum Simulation ──
+            const drawCanvas = document.getElementById('drawCanvas');
+            const drawCtx = drawCanvas.getContext('2d');
+            drawCtx.fillStyle = '#000';
+            drawCtx.fillRect(0, 0, 280, 280);
+
+            let isDrawing = false;
+            let currentFilter = 'random';
+
+            // Simple quantum-inspired filter simulation (runs in browser)
+            // Uses seeded pseudo-random rotation matrices to mimic quanvolution
+            function seedRandom(seed) {
+                let s = seed;
+                return function () {
+                    s = (s * 16807 + 0) % 2147483647;
+                    return (s - 1) / 2147483646;
+                };
+            }
+
+            const filterSeeds = { random: 42, entangling: 137, custom: 256 };
+
+            function simulateQuanvolution(imageData, width, height, filterType) {
+                const rng = seedRandom(filterSeeds[filterType] || 42);
+                const params = [];
+                for (let i = 0; i < 16; i++) params.push(rng() * Math.PI * 2);
+
+                const outW = Math.floor(width / 2);
+                const outH = Math.floor(height / 2);
+                const channels = [
+                    new Float32Array(outW * outH),
+                    new Float32Array(outW * outH),
+                    new Float32Array(outW * outH),
+                    new Float32Array(outW * outH),
+                ];
+
+                for (let y = 0; y < outH; y++) {
+                    for (let x = 0; x < outW; x++) {
+                        const px = [];
+                        for (let dy = 0; dy < 2; dy++) {
+                            for (let dx = 0; dx < 2; dx++) {
+                                const idx = ((y * 2 + dy) * width + (x * 2 + dx)) * 4;
+                                px.push(imageData[idx] / 255.0);
+                            }
+                        }
+
+                        // Simulate quantum circuit with trigonometric transforms
+                        const encoded = px.map((v, i) => Math.cos(Math.PI * v + params[i]));
+
+                        // Different "filter" behaviors
+                        if (filterType === 'random') {
+                            channels[0][y * outW + x] = Math.cos(encoded[0] * params[4] + encoded[1] * params[5]);
+                            channels[1][y * outW + x] = Math.sin(encoded[1] * params[6] - encoded[2] * params[7]);
+                            channels[2][y * outW + x] = Math.cos(encoded[2] * params[8] + encoded[3] * params[9]);
+                            channels[3][y * outW + x] = Math.sin(encoded[0] * params[10] - encoded[3] * params[11]);
+                        } else if (filterType === 'entangling') {
+                            const e01 = Math.cos(encoded[0] - encoded[1]) * params[4];
+                            const e23 = Math.sin(encoded[2] + encoded[3]) * params[5];
+                            channels[0][y * outW + x] = Math.tanh(e01 + encoded[2] * params[6]);
+                            channels[1][y * outW + x] = Math.tanh(e23 - encoded[0] * params[7]);
+                            channels[2][y * outW + x] = Math.cos(e01 * e23 + params[8]);
+                            channels[3][y * outW + x] = Math.sin(encoded[0] * encoded[1] - encoded[2] * encoded[3] + params[9]);
+                        } else {
+                            const sum = encoded.reduce((a, b) => a + b, 0) / 4;
+                            const diff = (encoded[0] - encoded[2]) * (encoded[1] - encoded[3]);
+                            channels[0][y * outW + x] = Math.cos(sum * params[4] + diff * params[5]);
+                            channels[1][y * outW + x] = Math.sin(diff * params[6] + sum * params[7]) * Math.cos(params[8]);
+                            channels[2][y * outW + x] = Math.tanh(encoded[0] * params[9] - encoded[3] * params[10] + diff);
+                            channels[3][y * outW + x] = Math.cos(sum * diff + params[11]);
+                        }
+                    }
+                }
+                return { channels, outW, outH };
+            }
+
+            function renderOutput() {
+                const imgData = drawCtx.getImageData(0, 0, 280, 280);
+                const result = simulateQuanvolution(imgData.data, 280, 280, currentFilter);
+                const chColors = [
+                    [99, 102, 241],   // indigo
+                    [236, 72, 153],   // pink
+                    [34, 211, 238],   // cyan
+                    [245, 158, 11],   // amber
+                ];
+
+                for (let ch = 0; ch < 4; ch++) {
+                    const canvas = document.getElementById('outCh' + ch);
+                    const ctx = canvas.getContext('2d');
+                    const out = ctx.createImageData(result.outW, result.outH);
+                    let min = Infinity, max = -Infinity;
+                    for (let i = 0; i < result.channels[ch].length; i++) {
+                        min = Math.min(min, result.channels[ch][i]);
+                        max = Math.max(max, result.channels[ch][i]);
+                    }
+                    const range = max - min || 1;
+                    for (let i = 0; i < result.channels[ch].length; i++) {
+                        const v = (result.channels[ch][i] - min) / range;
+                        out.data[i * 4 + 0] = Math.round(chColors[ch][0] * v);
+                        out.data[i * 4 + 1] = Math.round(chColors[ch][1] * v);
+                        out.data[i * 4 + 2] = Math.round(chColors[ch][2] * v);
+                        out.data[i * 4 + 3] = 255;
+                    }
+                    ctx.putImageData(out, 0, 0);
+                    // Scale up
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = result.outW;
+                    tempCanvas.height = result.outH;
+                    tempCanvas.getContext('2d').putImageData(out, 0, 0);
+                    ctx.clearRect(0, 0, 140, 140);
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(tempCanvas, 0, 0, 140, 140);
+                }
+            }
+
+            // Drawing handlers
+            function startDraw(e) {
+                isDrawing = true;
+                draw(e);
+            }
+            function endDraw() {
+                isDrawing = false;
+                drawCtx.beginPath();
+                renderOutput();
+            }
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const rect = drawCanvas.getBoundingClientRect();
+                let x, y;
+                if (e.touches) {
+                    x = e.touches[0].clientX - rect.left;
+                    y = e.touches[0].clientY - rect.top;
+                } else {
+                    x = e.clientX - rect.left;
+                    y = e.clientY - rect.top;
+                }
+                drawCtx.lineWidth = 16;
+                drawCtx.lineCap = 'round';
+                drawCtx.strokeStyle = '#fff';
+                drawCtx.lineTo(x, y);
+                drawCtx.stroke();
+                drawCtx.beginPath();
+                drawCtx.moveTo(x, y);
+            }
+
+            drawCanvas.addEventListener('mousedown', startDraw);
+            drawCanvas.addEventListener('mousemove', draw);
+            drawCanvas.addEventListener('mouseup', endDraw);
+            drawCanvas.addEventListener('mouseleave', endDraw);
+            drawCanvas.addEventListener('touchstart', startDraw, { passive: false });
+            drawCanvas.addEventListener('touchmove', draw, { passive: false });
+            drawCanvas.addEventListener('touchend', endDraw);
+
+            // Filter buttons
+            document.querySelectorAll('.demo-btn[data-filter]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.dataset.filter === 'clear') {
+                        drawCtx.fillStyle = '#000';
+                        drawCtx.fillRect(0, 0, 280, 280);
+                        renderOutput();
+                        return;
+                    }
+                    document.querySelectorAll('.demo-btn[data-filter]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.filter;
+                    renderOutput();
+                });
+            });
+
+            // Initial render
+            renderOutput();
+
+        })();
+    </script>
+</body>
+
+</html>
