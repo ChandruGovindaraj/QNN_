@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Interactive Quantum Neural Network Maze Visualization — 10 visual cards explaining how a QNN learns to navigate a maze using quantum superposition, entanglement, and reward-based training.">
+  <title>Quantum Neural Network Maze — Interactive Visualization</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- Particle Background Canvas -->
+  <canvas id="particleBg"></canvas>
+
+  <!-- Navigation -->
+  <nav id="mainNav">
+    <div class="nav-brand">
+      <span class="nav-icon">⚛</span>
+      <span class="nav-title">QNN Maze</span>
+    </div>
+    <div class="nav-dots" id="navDots"></div>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle card list">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- Card Menu Overlay -->
+  <div class="card-menu" id="cardMenu">
+    <div class="card-menu-inner">
+      <h2>Visual Cards</h2>
+      <ul id="cardMenuList"></ul>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- ==================== CARD 1 ==================== -->
+  <section class="card" id="card1" data-card="1">
+    <div class="card-number">01</div>
+    <div class="card-content">
+      <h1 class="card-title">The Maze &amp; Its <span class="gradient-text">Quantum Addresses</span></h1>
+      <p class="card-subtitle">Every cell gets a unique binary label — then the whole grid becomes a single quantum
+        vector.</p>
+
+      <div class="card1-layout">
+        <div class="maze-grid-wrapper">
+          <h3>4×4 Maze Grid</h3>
+          <div class="maze-grid" id="mazeGrid"></div>
+        </div>
+
+        <div class="flatten-arrow" id="flattenArrow">
+          <div class="arrow-label">FLATTEN</div>
+          <svg width="120" height="40" viewBox="0 0 120 40">
+            <defs>
+              <linearGradient id="arrowGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#00d4ff" />
+                <stop offset="100%" stop-color="#b44aff" />
+              </linearGradient>
+            </defs>
+            <line x1="10" y1="20" x2="100" y2="20" stroke="url(#arrowGrad)" stroke-width="3" />
+            <polygon points="95,10 110,20 95,30" fill="url(#arrowGrad)" />
+          </svg>
+        </div>
+
+        <div class="state-vector-wrapper">
+          <h3>16-Slot State Vector</h3>
+          <div class="state-vector" id="stateVector"></div>
+        </div>
+      </div>
+
+      <p class="card-insight"><span class="insight-icon">💡</span> Click any cell to see its amplitude highlighted in
+        the vector!</p>
+    </div>
+  </section>
+
+  <!-- ==================== CARD 2 ==================== -->
+  <section class="card" id="card2" data-card="2">
+    <div class="card-number">02</div>
+    <div class="card-content">
+      <h1 class="card-title">Classical Mind vs. <span class="gradient-text">Quantum Cloud</span></h1>
+      <p class="card-subtitle">One agent knows exactly where it is. The other is everywhere at once.</p>
+
+      <div class="comparison-container">
+        <div class="compare-panel classical-panel">
+          <h3><span class="panel-icon">🎯</span> Classical Agent</h3>
+          <div class="compare-grid" id="classicalGrid"></div>
+          <div class="compare-label">"I am at <strong>(1,2)</strong>"</div>
+          <ul class="compare-traits">
+            <li>Single position (x, y)</li>
+            <li>Evaluates moves one by one</li>
+            <li>Deterministic</li>
+          </ul>
+        </div>
+
+        <div class="vs-divider">
+          <span>VS</span>
+        </div>
+
+        <div class="compare-panel quantum-panel">
+          <h3><span class="panel-icon">☁️</span> Quantum Agent</h3>
+          <div class="compare-grid" id="quantumGrid"></div>
+          <div class="compare-label">"I am <strong>70%</strong> here, <strong>15%</strong> there, <strong>15%</strong>
+            elsewhere"</div>
+          <ul class="compare-traits">
+            <li>Superposition of all 16 cells</li>
+            <li>All cells evaluated <strong>simultaneously</strong></li>
+            <li>Probabilistic</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CARD 3 ==================== -->
+  <section class="card" id="card3" data-card="3">
+    <div class="card-number">03</div>
+    <div class="card-content">
+      <h1 class="card-title">The 2×2 <span class="gradient-text">Simplified Demo</span></h1>
+      <p class="card-subtitle">A tiny maze that shows how one rotation knob controls quantum teleportation to the
+        treasure.</p>
+
+      <div class="card3-layout">
+        <div class="mini-maze-section">
+          <h3>2×2 Maze</h3>
+          <div class="mini-maze" id="miniMaze">
+            <div class="mini-cell start-cell" data-idx="0">
+              <span class="cell-label">Start</span>
+              <span class="cell-ket">|00⟩</span>
+            </div>
+            <div class="mini-cell wall-cell" data-idx="1">
+              <span class="cell-label">Wall</span>
+              <span class="cell-ket">|01⟩</span>
+            </div>
+            <div class="mini-cell empty-cell" data-idx="2">
+              <span class="cell-label">Empty</span>
+              <span class="cell-ket">|10⟩</span>
+            </div>
+            <div class="mini-cell treasure-cell" data-idx="3">
+              <span class="cell-label">Treasure</span>
+              <span class="cell-ket">|11⟩</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="circuit-storyboard">
+          <h3>Circuit Storyboard</h3>
+          <div class="theta-control">
+            <label for="thetaSlider">θ = <span id="thetaValue">0.00</span> rad</label>
+            <input type="range" id="thetaSlider" min="0" max="3.14159" step="0.01" value="0">
+          </div>
+
+          <div class="prob-bars-container">
+            <div class="prob-bar-group">
+              <div class="prob-bar-track">
+                <div class="prob-bar" id="prob00" style="height: 100%"></div>
+              </div>
+              <span class="prob-label">|00⟩<br>Start</span>
+              <span class="prob-value" id="probVal00">100%</span>
+            </div>
+            <div class="prob-bar-group">
+              <div class="prob-bar-track">
+                <div class="prob-bar wall-bar" id="prob01" style="height: 0%"></div>
+              </div>
+              <span class="prob-label">|01⟩<br>Wall</span>
+              <span class="prob-value" id="probVal01">0%</span>
+            </div>
+            <div class="prob-bar-group">
+              <div class="prob-bar-track">
+                <div class="prob-bar" id="prob10" style="height: 0%"></div>
+              </div>
+              <span class="prob-label">|10⟩<br>Empty</span>
+              <span class="prob-value" id="probVal10">0%</span>
+            </div>
+            <div class="prob-bar-group">
+              <div class="prob-bar-track">
+                <div class="prob-bar treasure-bar" id="prob11" style="height: 0%"></div>
+              </div>
+              <span class="prob-label">|11⟩<br>Treasure</span>
+              <span class="prob-value" id="probVal11">0%</span>
+            </div>
+          </div>
+
+          <div class="circuit-steps" id="circuitSteps">
+            <div class="step active" data-step="1">
+              <div class="step-num">1</div>
+              <div class="step-text">Start: |00⟩ → vector [1,0,0,0]</div>
+            </div>
+            <div class="step" data-step="2">
+              <div class="step-num">2</div>
+              <div class="step-text">Apply Ry(θ) on qubit 0 → cos(θ/2)|00⟩ + sin(θ/2)|10⟩</div>
+            </div>
+            <div class="step" data-step="3">
+              <div class="step-num">3</div>
+              <div class="step-text">Apply CNOT → cos(θ/2)|00⟩ + sin(θ/2)|11⟩</div>
+            </div>
+            <div class="step" data-step="4">
+              <div class="step-num">4</div>
+              <div class="step-text">θ controls chance to teleport to treasure — that's entanglement!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CARD 4 ==================== -->
+  <section class="card" id="card4" data-card="4">
+    <div class="card-number">04</div>
+    <div class="card-content">
+      <h1 class="card-title">Rx, Ry, Rz on the <span class="gradient-text">Bloch Sphere</span></h1>
+      <p class="card-subtitle">Three rotation knobs, one quantum globe. Each knob does something different.</p>
+
+      <div class="card4-layout">
+        <div class="bloch-container">
+          <canvas id="blochCanvas" width="400" height="400"></canvas>
+          <div class="bloch-controls">
+            <div class="bloch-btn-group">
+              <button class="bloch-btn active" data-axis="ry" id="btnRy">Ry — Volume</button>
+              <button class="bloch-btn" data-axis="rx" id="btnRx">Rx — Tilt</button>
+              <button class="bloch-btn" data-axis="rz" id="btnRz">Rz — Phase</button>
+            </div>
+            <div class="bloch-slider-wrap">
+              <label for="blochAngle">Angle: <span id="blochAngleVal">0°</span></label>
+              <input type="range" id="blochAngle" min="0" max="360" step="1" value="0">
+            </div>
+          </div>
+        </div>
+
+        <div class="bloch-info">
+          <div class="gate-card active" id="gateRy">
+            <h4>Ry — The Volume Fader</h4>
+            <p>Tilts the arrow from north pole |0⟩ toward the equator (50/50 superposition). Controls
+              <strong>probability</strong> without affecting phase.</p>
+            <div class="gate-visual ry-visual">North ↕ South</div>
+          </div>
+          <div class="gate-card" id="gateRx">
+            <h4>Rx — The Sideways Tilt</h4>
+            <p>Tilts sideways — changes <strong>both</strong> probability and phase simultaneously.</p>
+            <div class="gate-visual rx-visual">↔ Sideways</div>
+          </div>
+          <div class="gate-card" id="gateRz">
+            <h4>Rz — The Phase Spinner</h4>
+            <p>Spins around the north-south axis — pure <strong>phase shift</strong>, no probability change.</p>
+            <div class="gate-visual rz-visual">↻ Spin</div>
+          </div>
+          <p class="bloch-note">For a full QNN, we need <em>volume</em> (probability) and <em>phase</em> (interference)
+            to sculpt the quantum cloud.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CARD 5 ==================== -->
+  <section class="card" id="card5" data-card="5">
+    <div class="card-number">05</div>
+    <div class="card-content">
+      <h1 class="card-title">The Full QNN <span class="gradient-text">Circuit</span></h1>
+      <p class="card-subtitle">4 qubits, learnable rotation gates, and CNOT entanglement — the quantum "brain".</p>
+
+      <div class="circuit-diagram-container">
+        <canvas id="circuitCanvas" width="900" height="400"></canvas>
+        <div class="circuit-legend">
+          <div class="legend-item">
+            <span class="legend-swatch gate-swatch"></span> Rotation Gate (learnable θ)
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch cnot-swatch"></span> CNOT (entanglement)
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch qubit-swatch"></span> Qubit wire
+          </div>
+        </div>
+      </div>
+
+      <div class="circuit-info-row">
+        <div class="circuit-info-card">
+          <span class="info-icon">🎛️</span>
+          <h4>Learnable Knobs</h4>
+          <p>Each rotation gate has an angle θ that is adjusted during training.</p>
+        </div>
+        <div class="circuit-info-card">
+          <span class="info-icon">🔗</span>
+          <h4>Entanglement</h4>
+          <p>CNOTs link qubits so they can't be described independently.</p>
+        </div>
+        <div class="circuit-info-card">
+          <span class="info-icon">📐</span>
+          <h4>16×16 Matrix</h4>
+          <p>The entire circuit equals one big unitary matrix that rotates the state vector.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CARD 6 ==================== -->
+  <section class="card" id="card6" data-card="6">
+    <div class="card-number">06</div>
+    <div class="card-content">
+      <h1 class="card-title">How a Move <span class="gradient-text">Happens</span></h1>
+      <p class="card-subtitle">From a definite position, through a quantum cloud, to a measured destination.</p>
+
+      <div class="flowchart-container">
+        <div class="flow-step" id="flow1">
+          <div class="flow-icon">📍</div>
+          <div class="flow-text">
+            <h4>Current Position</h4>
+            <p>e.g., |0010⟩ → cell (0,2)</p>
+          </div>
+        </div>
+        <div class="flow-arrow">▼</div>
+
+        <div class="flow-step" id="flow2">
+          <div class="flow-icon">⚛️</div>
+          <div class="flow-text">
+            <h4>QNN Circuit</h4>
+            <p>Applies U(θ) — the learned rotation matrix</p>
+          </div>
+        </div>
+        <div class="flow-arrow">▼</div>
+
+        <div class="flow-step" id="flow3">
+          <div class="flow-icon">☁️</div>
+          <div class="flow-text">
+            <h4>Superposition</h4>
+            <p>Probability cloud over all 16 cells</p>
+          </div>
+          <div class="flow-cloud" id="flowCloud"></div>
+        </div>
+        <div class="flow-arrow">▼</div>
+
+        <div class="flow-step" id="flow4">
+          <div class="flow-icon">🎲</div>
+          <div class="flow-text">
+            <h4>Measurement</h4>
+            <p>Measure all 4 qubits → random bitstring, e.g., |0110⟩</p>
+          </div>
+        </div>
+        <div class="flow-arrow">▼</div>
+
+        <div class="flow-step" id="flow5">
+          <div class="flow-icon">✨</div>
+          <div class="flow-text">
+            <h4>Teleport!</h4>
+            <p>Agent appears at the measured cell</p>
+          </div>
+        </div>
+        <div class="flow-arrow">▼</div>
+
+        <div class="flow-step" id="flow6">
+          <div class="flow-icon result-icon">🏆</div>
+          <div class="flow-text">
+            <h4>Outcome</h4>
+            <p>Treasure → +10 reward &nbsp;|&nbsp; Wall → -10 penalty</p>
+          </div>
+        </div>
+      </div>
+
+      <button class="animate-flow-btn" id="animateFlowBtn">▶ Animate the Flow</button>
+    </div>
+  </section>
+
+  <!-- ==================== CARD 7 ==================== -->
+  <section class="card" id="card7" data-card="7">
+    <div class="card-number">07</div>
+    <div class="card-content">
+      <h1 class="card-title">Reward Training — <span class="gradient-text">Knobs &amp; Treats</span></h1>
+      <p class="card-subtitle">The QNN never sees the maze. It only chases applause.</p>
+
+      <div class="card7-layout">
+        <div class="radio-analogy">
+          <h3>🎵 The Radio Analogy</h3>
+          <div class="radio-visual">
+            <div class="radio-body">
+              <div class="radio-display" id="radioDisplay">♪ Reward: <span id="radioReward">0</span></div>
+              <div class="radio-dials">
+                <div class="dial-group">
+                  <div class="dial" id="dial1" data-angle="0">
+                    <div class="dial-knob"></div>
+                  </div>
+                  <span>θ₁</span>
+                </div>
+                <div class="dial-group">
+                  <div class="dial" id="dial2" data-angle="0">
+                    <div class="dial-knob"></div>
+                  </div>
+                  <span>θ₂</span>
+                </div>
+                <div class="dial-group">
+                  <div class="dial" id="dial3" data-angle="0">
+                    <div class="dial-knob"></div>
+                  </div>
+                  <span>θ₃</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="analogy-text">Wiggle each dial. Listen for louder music. Keep turning toward the applause.</p>
+        </div>
+
+        <div class="param-shift-section">
+          <h3>⚙️ Parameter-Shift Rule</h3>
+          <div class="param-shift-visual">
+            <div class="shift-diagram">
+              <div class="shift-pos">
+                <div class="shift-bar" id="shiftBarPlus">
+                  <div class="shift-fill" style="height: 70%"></div>
+                </div>
+                <span>θ + π/2</span>
+                <span class="reward-label">R⁺</span>
+              </div>
+              <div class="shift-center">
+                <div class="shift-knob-icon">⟳</div>
+                <span>θ</span>
+              </div>
+              <div class="shift-neg">
+                <div class="shift-bar" id="shiftBarMinus">
+                  <div class="shift-fill" style="height: 35%"></div>
+                </div>
+                <span>θ − π/2</span>
+                <span class="reward-label">R⁻</span>
+              </div>
+            </div>
+            <div class="gradient-formula">
+              <code>Gradient = (R⁺ − R⁻) / 2</code><br>
+              <code>θ ← θ + lr × gradient</code>
+            </div>
+            <div class="gradient-arrow" id="gradientArrow">
+              ⬆ Update toward higher reward
+            </div>
+          </div>
+          <button class="wiggle-btn" id="wiggleBtn">▶ Wiggle &amp; Learn</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CARD 8 ==================== -->
+  <section class="card" id="card8" data-card="8">
+    <div class="card-number">08</div>
+    <div class="card-content">
+      <h1 class="card-title">Address vs. Content — <span class="gradient-text">The Deep Insight</span></h1>
+      <p class="card-subtitle">"The circuit only juggles addresses — it never sees a wall or treasure."</p>
+
+      <div class="card8-layout">
+        <div class="postman-scene" id="postmanScene">
+          <div class="postman">
+            <div class="postman-body">
+              <div class="blindfold">🙈</div>
+              <div class="postman-label">QNN<br>(Blindfolded)</div>
+            </div>
+          </div>
+
+          <div class="envelopes" id="envelopes">
+            <div class="envelope" data-addr="|0000⟩" data-content="Empty">
+              <div class="env-front">|0000⟩</div>
+              <div class="env-back">Empty</div>
+            </div>
+            <div class="envelope" data-addr="|0101⟩" data-content="Wall">
+              <div class="env-front">|0101⟩</div>
+              <div class="env-back">🧱 Wall</div>
+            </div>
+            <div class="envelope" data-addr="|1010⟩" data-content="Treasure">
+              <div class="env-front">|1010⟩</div>
+              <div class="env-back">💎 Treasure</div>
+            </div>
+            <div class="envelope" data-addr="|1111⟩" data-content="Empty">
+              <div class="env-front">|1111⟩</div>
+              <div class="env-back">Empty</div>
+            </div>
+          </div>
+
+          <div class="tip-jar">
+            <div class="tip-label">Tips Received</div>
+            <div class="tip-amount" id="tipAmount">$0</div>
+          </div>
+        </div>
+
+        <div class="insight-box">
+          <h3>The Key Insight</h3>
+          <p>The circuit is like a <strong>blindfolded postman</strong> sorting letters by zip code. He gets a
+            <strong>tip after delivery</strong> — and learns which addresses give big tips purely by experience.</p>
+          <p>After many deliveries, the rotation angles have sorted the highest-tip addresses to the top —
+            <strong>without ever reading what's inside the envelope</strong>.</p>
+        </div>
+      </div>
+
+      <button class="deliver-btn" id="deliverBtn">📬 Deliver a Letter</button>
+    </div>
+  </section>
+
+  <!-- ==================== CARD 9 ==================== -->
+  <section class="card" id="card9" data-card="9">
+    <div class="card-number">09</div>
+    <div class="card-content">
+      <h1 class="card-title">The Full Quantum Maze <span class="gradient-text">in One Slide</span></h1>
+      <p class="card-subtitle">The complete pipeline from maze to learned path.</p>
+
+      <div class="pipeline-container">
+        <div class="pipeline-step" data-pipe="1">
+          <div class="pipe-icon">🏁</div>
+          <h4>Maze Grid</h4>
+          <p>4×4 cells with walls, empty, start, treasure</p>
+        </div>
+        <div class="pipe-connector"><span>→</span></div>
+
+        <div class="pipeline-step" data-pipe="2">
+          <div class="pipe-icon">🔢</div>
+          <h4>Binary Addresses</h4>
+          <p>Each cell → 4-bit label</p>
+        </div>
+        <div class="pipe-connector"><span>→</span></div>
+
+        <div class="pipeline-step" data-pipe="3">
+          <div class="pipe-icon">📊</div>
+          <h4>16×1 Vector</h4>
+          <p>Flattened state vector</p>
+        </div>
+        <div class="pipe-connector"><span>→</span></div>
+
+        <div class="pipeline-step" data-pipe="4">
+          <div class="pipe-icon">⚛️</div>
+          <h4>QNN Circuit</h4>
+          <p>Rx, Ry, Rz + CNOTs</p>
+        </div>
+        <div class="pipe-connector"><span>→</span></div>
+
+        <div class="pipeline-step" data-pipe="5">
+          <div class="pipe-icon">☁️</div>
+          <h4>Probability Cloud</h4>
+          <p>Superposition over all cells</p>
+        </div>
+        <div class="pipe-connector"><span>→</span></div>
+
+        <div class="pipeline-step" data-pipe="6">
+          <div class="pipe-icon">🎲</div>
+          <h4>Measurement</h4>
+          <p>Collapse to one cell</p>
+        </div>
+        <div class="pipe-connector"><span>→</span></div>
+
+        <div class="pipeline-step" data-pipe="7">
+          <div class="pipe-icon">🏆</div>
+          <h4>Reward</h4>
+          <p>Feedback trains angles</p>
+        </div>
+      </div>
+
+      <div class="motto-banner">
+        <span class="motto-quote">"Probabilities, not code. Rewards, not rules."</span>
+      </div>
+
+      <div class="pipeline-detail" id="pipelineDetail">
+        <p>Click any pipeline step above to see more detail.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CARD 10 ==================== -->
+  <section class="card" id="card10" data-card="10">
+    <div class="card-number">10</div>
+    <div class="card-content">
+      <h1 class="card-title">Classical vs. Quantum <span class="gradient-text">Quick Comparison</span></h1>
+      <p class="card-subtitle">Side-by-side — two worlds, one goal.</p>
+
+      <div class="comparison-table-container">
+        <table class="comparison-table" id="compTable">
+          <thead>
+            <tr>
+              <th></th>
+              <th><span class="table-icon">🤖</span> Classical Agent</th>
+              <th><span class="table-icon">⚛️</span> Quantum Agent</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-label">State</td>
+              <td>Single (x, y)</td>
+              <td>Superposition of 16 cells</td>
+            </tr>
+            <tr>
+              <td class="row-label">Move Evaluation</td>
+              <td>Check 4 actions sequentially</td>
+              <td>All 16 evaluated in parallel via interference</td>
+            </tr>
+            <tr>
+              <td class="row-label">Learning</td>
+              <td>Backpropagation on Q-network</td>
+              <td>Parameter-shift rule on QNN</td>
+            </tr>
+            <tr>
+              <td class="row-label">Knows Maze?</td>
+              <td>Only through reward</td>
+              <td>Only through reward</td>
+            </tr>
+            <tr>
+              <td class="row-label">Storage</td>
+              <td>Neural network weights</td>
+              <td>Rotation angles in circuit</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="final-message">
+        <h2>🎉 You've Explored the Complete QNN Maze!</h2>
+        <p>From encoding to movement to training — the quantum agent learns a safe path without ever knowing what's
+          inside each cell.</p>
+        <button class="restart-btn" id="restartBtn">↑ Back to Card 1</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
